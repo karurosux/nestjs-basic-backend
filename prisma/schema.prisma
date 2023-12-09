@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BranchType {
+  HQ
+  LEAF
+}
+
+model Branch {
+  id         String     @id @default(cuid()) @db.VarChar(64)
+  name       String     @db.VarChar(128)
+  city       String     @db.VarChar(128)
+  province   String     @db.VarChar(128)
+  zipcode    String     @db.VarChar(20)
+  phone      String     @db.VarChar(20)
+  email      String     @unique @db.VarChar(255)
+  branchType BranchType @default(LEAF)
+
+  users User[]
+  roles Role[]
+
+  @@map("branch")
+}
+
+enum RoleType {
+  COMMON
+  SUPER_ADMIN
+}
+
+model Role {
+  id       String   @id @default(cuid()) @db.VarChar(64)
+  name     String   @db.VarChar(128)
+  branchId String?  @db.VarChar(64)
+  roleType RoleType @default(COMMON)
+
+  branch Branch? @relation(fields: [branchId], references: [id])
+
+  users       User[]
+  permissions Permission[]
+
+  @@map("role")
+}
+
+model User {
+  id        String  @id @default(cuid()) @db.VarChar(64)
+  email     String  @unique @db.Text
+  password  String? @db.VarChar(64)
+  firstName String  @db.VarChar(128)
+  lastName  String  @db.VarChar(128)
+  branchId  String  @db.VarChar(64)
+  roleId    String  @db.VarChar(64)
+
+  branch Branch @relation(fields: [branchId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@map("user")
+}
+
+enum PermissionCategory {
+  CUSTOMER_MANAGEMENT
+  USER_MANAGEMENT
+  ROLE_MANAGEMENT
+  BRANCH_MANAGEMENT
+}
+
+model Permission {
+  id       String             @id @default(cuid()) @db.VarChar(64)
+  category PermissionCategory
+  read     Boolean            @default(false)
+  write    Boolean            @default(false)
+  roleId   String             @db.VarChar(64)
+
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@map("permission")
+}
